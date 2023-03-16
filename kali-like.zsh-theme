@@ -116,11 +116,15 @@ if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
 
     if [ "$syntax_highlighting" = no ]; then
         if [ "$AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN" = yes ]; then
-            mkdir ~/.zsh >/dev/null 2>&1
-            git clone --quiet https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.zsh/zsh-syntax-highlighting >/dev/null 2>&1
-            if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-                . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
-                syntax_highlighting=yes
+            if [ command -v git &> /dev/null ]; then
+                mkdir ~/.zsh >/dev/null 2>&1
+                git clone --quiet https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.zsh/zsh-syntax-highlighting >/dev/null 2>&1
+                if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+                    . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
+                    syntax_highlighting=yes
+                else
+                    echo "git not found, plugin zsh_syntax_highlighting not installed"
+                fi
             fi
         fi
     fi    
@@ -254,13 +258,17 @@ if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ]; then
 
     if [ "$zsh_autosuggestions" = no ]; then
         if [ "$AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN" = yes ]; then
-            mkdir ~/.zsh >/dev/null 2>&1
-            git clone --quiet https://github.com/zsh-users/zsh-autosuggestions.git ~/.zsh/zsh-autosuggestions >/dev/null 2>&1
-            if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-                . ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh 
-                ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
-                ZSH_AUTOSUGGEST_STRATEGY=(completion)
-                zsh_autosuggestions=yes
+            if [ command -v git &> /dev/null ]; then
+                mkdir ~/.zsh >/dev/null 2>&1
+                git clone --quiet https://github.com/zsh-users/zsh-autosuggestions.git ~/.zsh/zsh-autosuggestions >/dev/null 2>&1
+                if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
+                    . ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh 
+                    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
+                    ZSH_AUTOSUGGEST_STRATEGY=(completion)
+                    zsh_autosuggestions=yes
+                fi
+            else
+                echo "git not found, plugin zsh_autosuggestions not installed"
             fi
         fi
     fi    
