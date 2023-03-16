@@ -116,7 +116,7 @@ if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
 
     if [ "$syntax_highlighting" = no ]; then
         if [ "$AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN" = yes ]; then
-            if [ command -v git &> /dev/null ]; then
+            if whence -cp git &> /dev/null; then
                 mkdir ~/.zsh >/dev/null 2>&1
                 git clone --quiet https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.zsh/zsh-syntax-highlighting >/dev/null 2>&1
                 if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
@@ -258,7 +258,7 @@ if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ]; then
 
     if [ "$zsh_autosuggestions" = no ]; then
         if [ "$AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN" = yes ]; then
-            if [ command -v git &> /dev/null ]; then
+            if whence -cp git &> /dev/null; then
                 mkdir ~/.zsh >/dev/null 2>&1
                 git clone --quiet https://github.com/zsh-users/zsh-autosuggestions.git ~/.zsh/zsh-autosuggestions >/dev/null 2>&1
                 if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
