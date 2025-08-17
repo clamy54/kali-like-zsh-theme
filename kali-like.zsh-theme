@@ -81,7 +81,8 @@ configure_prompt() {
     fi
     case "$PROMPT_ALTERNATIVE" in
         twoline)
-            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]$(git_prompt_info)\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+            PROMPT=$'%{$CYANPROMPT%}┌───(%B%{$FGPROMPT%}%n@%m%b%{$CYANPROMPT%})-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b%{$CYANPROMPT%}]%{$reset_color%}$(git_prompt_info)%{$reset_color%}\n%{$CYANPROMPT%}└─%B%(#.%F{red}#.%{$FGPROMPT%}$)%b%F{reset} '
+
             RPROMPT=
             ;;
         oneline)
@@ -100,7 +101,7 @@ if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
     # enable syntax-highlighting if avalaible
 
     if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-        . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
+        . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
         syntax_highlighting=yes
     fi
 
@@ -121,14 +122,14 @@ if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
                 mkdir ~/.zsh >/dev/null 2>&1
                 git clone --quiet https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.zsh/zsh-syntax-highlighting >/dev/null 2>&1
                 if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-                    . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
+                    . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
                     syntax_highlighting=yes
                 else
                     echo "git not found, plugin zsh_syntax_highlighting not installed"
                 fi
             fi
         fi
-    fi    
+    fi
 
 
     if [ "$syntax_highlighting" = yes ]; then
@@ -210,8 +211,8 @@ if [ -x /usr/bin/dircolors ]; then
     alias diff='diff --color=auto'
     alias ip='ip --color=auto'
 
-    alias pacman='pacman --color=auto' 
-    
+    alias pacman='pacman --color=auto'
+
 
     export LESS_TERMCAP_mb=$'\E[1;31m'     # begin blink
     export LESS_TERMCAP_md=$'\E[1;36m'     # begin bold
@@ -253,7 +254,7 @@ if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ]; then
     fi
 
     if [ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-        . /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 
+        . /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
         # change suggestion color
         ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
         ZSH_AUTOSUGGEST_STRATEGY=(completion history)
@@ -266,7 +267,7 @@ if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ]; then
                 mkdir ~/.zsh >/dev/null 2>&1
                 git clone --quiet https://github.com/zsh-users/zsh-autosuggestions.git ~/.zsh/zsh-autosuggestions >/dev/null 2>&1
                 if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-                    . ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh 
+                    . ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
                     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
                     ZSH_AUTOSUGGEST_STRATEGY=(completion)
                     zsh_autosuggestions=yes
@@ -275,7 +276,7 @@ if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ]; then
                 echo "git not found, plugin zsh_autosuggestions not installed"
             fi
         fi
-    fi    
+    fi
 fi
 
 
