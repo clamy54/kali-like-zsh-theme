@@ -81,8 +81,7 @@ configure_prompt() {
     fi
     case "$PROMPT_ALTERNATIVE" in
         twoline)
-            PROMPT=$'%{$CYANPROMPT%}┌───(%B%{$FGPROMPT%}%n@%m%b%{$CYANPROMPT%})-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b%{$CYANPROMPT%}]%{$reset_color%}$(git_prompt_info)%{$reset_color%}\n%{$CYANPROMPT%}└─%B%(#.%F{red}#.%{$FGPROMPT%}$)%b%F{reset} '
-
+            PROMPT=$'$CYANPROMPT┌$(if [[ -n $VIRTUAL_ENV ]]; then echo "─(%F{white}$(basename $VIRTUAL_ENV)$CYANPROMPT)"; fi)\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]$(git_prompt_info)\n$CYANPROMPT└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
             RPROMPT=
             ;;
         oneline)
@@ -284,3 +283,7 @@ fi
 if [ -f /etc/zsh_command_not_found ]; then
     . /etc/zsh_command_not_found
 fi
+
+# hide default virtual environment
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+export CONDA_CHANGEPS1=false
