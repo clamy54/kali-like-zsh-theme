@@ -15,7 +15,7 @@
 # Some parts of this code was directly ripped from Kali Linux .zshrc        #
 #                                                                           #
 #############################################################################
-# (C) 2023 Cyril LAMY under the MIT License                                 #
+# (C) 2023-2026 Cyril LAMY under the MIT License                            #
 #############################################################################
 
 #####   OPTIONS     #####
@@ -28,6 +28,20 @@ AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN=yes
 
 PROMPT_ALTERNATIVE=twoline
 NEWLINE_BEFORE_PROMPT=yes
+
+# Colors for the prompt (256-color palette indices)
+# Run 'spectrum_ls' in your terminal to see all available colors
+FGPROMPT_USER=027
+FGPROMPT_ROOT=196
+FRAMEPROMPT_USER=073
+FRAMEPROMPT_ROOT=027
+VENVPROMPT_COLOR=white
+GITPROMPT_COLOR=067
+# PATHPROMPT_COLOR: color of the ~/path in the prompt
+#   "terminal_default" : use the terminal's default foreground color
+#   color name         : e.g. white, cyan, yellow, red, green, blue, magenta
+#   256-color index    : e.g. 073, 220 (run 'spectrum_ls' to browse)
+PATHPROMPT_COLOR=terminal_default
 
 #### END OF OPTIONS #####
 
@@ -68,27 +82,29 @@ alias history="history 0"
 TIMEFMT=$'\nreal\t%E\nuser\t%U\nsys\t%S\ncpu\t%P'
 
 configure_prompt() {
-    ZSH_THEME_GIT_PROMPT_PREFIX="%{$FG[067]%}["
+    ZSH_THEME_GIT_PROMPT_PREFIX="%{$FG[$GITPROMPT_COLOR]%}["
     ZSH_THEME_GIT_PROMPT_SUFFIX="] %{$reset_color%}"
 
 
     if [[ $UID == 0 || $EUID == 0 ]]; then
-        FGPROMPT="$FG[196]"
-        CYANPROMPT="$FG[027]"
+        FGPROMPT="$FG[$FGPROMPT_ROOT]"
+        FRAMEPROMPT="$FG[$FRAMEPROMPT_ROOT]"
     else
-        CYANPROMPT="$FG[073]"
-        FGPROMPT="$FG[027]"
+        FRAMEPROMPT="$FG[$FRAMEPROMPT_USER]"
+        FGPROMPT="$FG[$FGPROMPT_USER]"
     fi
     case "$PROMPT_ALTERNATIVE" in
         twoline)
-            PROMPT=$'$CYANPROMPT┌$(if [[ -n $VIRTUAL_ENV ]]; then echo "─(%F{white}$(basename $VIRTUAL_ENV)$CYANPROMPT)"; fi)\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]$(git_prompt_info)\n$CYANPROMPT└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+            PROMPT=$'$FRAMEPROMPT┌$(if [[ -n $VIRTUAL_ENV ]]; then echo "─(%F{$VENVPROMPT_COLOR}$(basename $VIRTUAL_ENV)$FRAMEPROMPT)"; fi)\(%B$FGPROMPT%n@%m%b$FRAMEPROMPT)-[%B$([ "$PATHPROMPT_COLOR" = "terminal_default" ] && echo "%F{reset}" || echo "%F{$PATHPROMPT_COLOR}")%(6~.%-1~/…/%4~.%5~)%b$FRAMEPROMPT]$(git_prompt_info)\n$FRAMEPROMPT└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
             RPROMPT=
             ;;
         oneline)
-            PROMPT=$'%B$FGPROMPT%n@%m%b%F{reset}:%B$CYANPROMPT%~%b$(git_prompt_info)%F{reset}%(#.#.$) '
+            PROMPT=$'%B$FGPROMPT%n@%m%b%F{reset}:%B$([ "$PATHPROMPT_COLOR" = "terminal_default" ] && echo "%F{reset}" || echo "%F{$PATHPROMPT_COLOR}")%~%b$(git_prompt_info)%F{reset}%(#.#.$) '
             RPROMPT=
             ;;
     esac
+
+    [[ "$NEWLINE_BEFORE_PROMPT" == yes ]] && PROMPT=$'\n'"$PROMPT"
 }
 
 configure_prompt
@@ -124,15 +140,17 @@ if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
                     . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
                     syntax_highlighting=yes
                 else
-                    echo "git not found, plugin zsh_syntax_highlighting not installed"
+                    echo "Failed to clone zsh-syntax-highlighting plugin"
                 fi
+            else
+                echo "git not found, plugin zsh_syntax_highlighting not installed"
             fi
         fi
     fi
 
 
     if [ "$syntax_highlighting" = yes ]; then
-    CL_CYAN="073"
+        CL_CYAN="$FRAMEPROMPT_USER"
         ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
         ZSH_HIGHLIGHT_STYLES[default]=none
         ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=white,underline
@@ -268,8 +286,10 @@ if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ]; then
                 if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
                     . ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
                     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
-                    ZSH_AUTOSUGGEST_STRATEGY=(completion)
+                    ZSH_AUTOSUGGEST_STRATEGY=(completion history)
                     zsh_autosuggestions=yes
+                else
+                    echo "Failed to clone zsh-autosuggestions plugin"
                 fi
             else
                 echo "git not found, plugin zsh_autosuggestions not installed"
