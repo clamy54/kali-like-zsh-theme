@@ -12,16 +12,43 @@ Kali-Like can be installed on any linux distribution and isn't Kali Linux depend
 3. Set `ZSH_THEME="current_theme"` to `ZSH_THEME="kali-like"`  
 
 
-## Options  
-Kali-Like use zsh_autosuggestions and zsh-syntax-highlighting plugins.
-If it doesn't find theses plugins, it downloads them automatically in your ~/.zsh folder.
+## Options
 
-If you dont' want to automatically download missing plugins, you can set AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN and AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN to "no" at the beginning of the theme file.
+All options are defined at the top of the theme file.
 
-If you don't want to use theses plugins, you can set USE_SYNTAX_HIGHLIGHTING and USE_ZSH_AUTOSUGGESTIONS vars to "no" at the beginning of the theme file.
+### Plugins
 
-By default, this theme fits on two lines on screen. You can switch to single-line mode by pressing Ctrl+P. If you want to use single line mode by default, you can set PROMPT_ALTERNATIVE=oneline instead of
-PROMPT_ALTERNATIVE=twoline.
+Kali-Like uses `zsh-autosuggestions` and `zsh-syntax-highlighting` plugins.
+If they are not found, they are downloaded automatically into `~/.zsh/`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `USE_SYNTAX_HIGHLIGHTING` | `yes` | Enable zsh-syntax-highlighting |
+| `AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN` | `yes` | Auto-download if not found |
+| `USE_ZSH_AUTOSUGGESTIONS` | `yes` | Enable zsh-autosuggestions |
+| `AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN` | `yes` | Auto-download if not found |
+
+### Prompt layout
+
+| Variable | Default | Description |
+|---|---|---|
+| `PROMPT_ALTERNATIVE` | `twoline` | `twoline` or `oneline`. Toggle at runtime with `Ctrl+P` |
+| `NEWLINE_BEFORE_PROMPT` | `yes` | Print a blank line before each prompt |
+
+### Colors
+
+Colors are specified as 256-color palette indices. Run `spectrum_ls` in your terminal to browse all available colors.
+Color names (`white`, `cyan`, `yellow`, etc.) are also accepted where noted.
+
+| Variable | Default | Description |
+|---|---|---|
+| `FGPROMPT_USER` | `027` | `user@host` color (normal user) |
+| `FGPROMPT_ROOT` | `196` | `root@host` color |
+| `FRAMEPROMPT_USER` | `073` | Frame characters color (`┌`, `└─`, brackets) for normal user |
+| `FRAMEPROMPT_ROOT` | `027` | Frame characters color for root |
+| `GITPROMPT_COLOR` | `067` | Git branch color |
+| `VENVPROMPT_COLOR` | `white` | Virtual environment name color (color name or index) |
+| `PATHPROMPT_COLOR` | `terminal_default` | Path color — use `terminal_default` for the terminal's default foreground color, or any color name/index |
 
 ## Font  
 By default, Kali Linux uses FiraCode as default terminal font.
