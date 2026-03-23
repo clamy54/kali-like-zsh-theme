@@ -29,21 +29,68 @@ AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN=yes
 PROMPT_ALTERNATIVE=twoline
 NEWLINE_BEFORE_PROMPT=yes
 
+# Theme mode: "auto" (detect terminal background), "dark", or "light"
+THEME_MODE=auto
+
 # Colors for the prompt (256-color palette indices)
 # Run 'spectrum_ls' in your terminal to see all available colors
+# These are the default (dark) colors; light mode overrides them below
 FGPROMPT_USER=027
 FGPROMPT_ROOT=196
 FRAMEPROMPT_USER=073
 FRAMEPROMPT_ROOT=027
 VENVPROMPT_COLOR=white
-GITPROMPT_COLOR=067
+VCSPROMPT_COLOR=067
+SSHPROMPT_COLOR=yellow
+TMUXPROMPT_COLOR=cyan
+DOCKERPROMPT_COLOR=033
+NIXPROMPT_COLOR=105
+K8SPROMPT_COLOR=069
+CMDTIME_COLOR=220
+# Show command execution time if it exceeds CMDTIME_THRESHOLD seconds
+SHOW_CMD_DURATION=yes
+CMDTIME_THRESHOLD=3
+# Async vcs_info: avoid prompt lag in large repositories
+ASYNC_VCS_INFO=yes
 # PATHPROMPT_COLOR: color of the ~/path in the prompt
 #   "terminal_default" : use the terminal's default foreground color
 #   color name         : e.g. white, cyan, yellow, red, green, blue, magenta
 #   256-color index    : e.g. 073, 220 (run 'spectrum_ls' to browse)
 PATHPROMPT_COLOR=terminal_default
+# Number of ─ characters after the initial ┌─
+PROMPT_DASH_COUNT=3
 
 #### END OF OPTIONS #####
+
+# Resolve theme mode
+_resolved_theme_mode="$THEME_MODE"
+if [[ "$_resolved_theme_mode" == auto ]]; then
+    _resolved_theme_mode=dark
+    if [[ -n "$COLORFGBG" ]]; then
+        # COLORFGBG format: "fg;bg" — bg >= 8 means light background
+        local _bg_color="${COLORFGBG##*;}"
+        if [[ "$_bg_color" =~ '^[0-9]+$' ]] && (( _bg_color >= 8 )); then
+            _resolved_theme_mode=light
+        fi
+    fi
+fi
+
+# Override colors for light terminal backgrounds
+if [[ "$_resolved_theme_mode" == light ]]; then
+    FGPROMPT_USER=025
+    FGPROMPT_ROOT=160
+    FRAMEPROMPT_USER=030
+    FRAMEPROMPT_ROOT=025
+    VENVPROMPT_COLOR=053
+    VCSPROMPT_COLOR=024
+    SSHPROMPT_COLOR=166
+    TMUXPROMPT_COLOR=030
+    DOCKERPROMPT_COLOR=025
+    NIXPROMPT_COLOR=055
+    K8SPROMPT_COLOR=025
+    CMDTIME_COLOR=130
+    [[ "$PATHPROMPT_COLOR" == terminal_default ]] && PATHPROMPT_COLOR=terminal_default
+fi
 
 setopt autocd              # change directory just by typing its name
 setopt interactivecomments # allow comments in interactive mode
@@ -81,10 +128,15 @@ alias history="history 0"
 # configure `time` format
 TIMEFMT=$'\nreal\t%E\nuser\t%U\nsys\t%S\ncpu\t%P'
 
-configure_prompt() {
-    ZSH_THEME_GIT_PROMPT_PREFIX="%{$FG[$GITPROMPT_COLOR]%}["
-    ZSH_THEME_GIT_PROMPT_SUFFIX="] %{$reset_color%}"
+autoload -Uz vcs_info
+zstyle ':vcs_info:*' enable git svn hg bzr
+zstyle ':vcs_info:*' check-for-changes true
+zstyle ':vcs_info:*' stagedstr '%F{green}+%f'
+zstyle ':vcs_info:*' unstagedstr '%F{red}!%f'
 
+configure_prompt() {
+    zstyle ':vcs_info:*' formats "%{$FG[$VCSPROMPT_COLOR]%}[%b%c%u%{$FG[$VCSPROMPT_COLOR]%}] %{$reset_color%}"
+    zstyle ':vcs_info:*' actionformats "%{$FG[$VCSPROMPT_COLOR]%}[%b|%a%c%u%{$FG[$VCSPROMPT_COLOR]%}] %{$reset_color%}"
 
     if [[ $UID == 0 || $EUID == 0 ]]; then
         FGPROMPT="$FG[$FGPROMPT_ROOT]"
@@ -93,14 +145,25 @@ configure_prompt() {
         FRAMEPROMPT="$FG[$FRAMEPROMPT_USER]"
         FGPROMPT="$FG[$FGPROMPT_USER]"
     fi
+
+    local dashes=${(l:$PROMPT_DASH_COUNT::─:)}
+    local ssh_indicator=''
+    local tmux_indicator=''
+    local docker_indicator=''
+    local nix_indicator=''
+    [[ -n "$SSH_CONNECTION" ]] && ssh_indicator="─(%F{$SSHPROMPT_COLOR}SSH$FRAMEPROMPT)"
+    [[ -n "$TMUX" ]] && tmux_indicator="─(%F{$TMUXPROMPT_COLOR}tmux$FRAMEPROMPT)"
+    [[ -f /.dockerenv || -f /run/.containerenv || -n "$container" ]] && docker_indicator="─(%F{$DOCKERPROMPT_COLOR}container$FRAMEPROMPT)"
+    [[ -n "$IN_NIX_SHELL" || -n "$NIX_STORE" ]] && nix_indicator="─(%F{$NIXPROMPT_COLOR}nix$FRAMEPROMPT)"
+
     case "$PROMPT_ALTERNATIVE" in
         twoline)
-            PROMPT=$'$FRAMEPROMPT┌$(if [[ -n $VIRTUAL_ENV ]]; then echo "─(%F{$VENVPROMPT_COLOR}$(basename $VIRTUAL_ENV)$FRAMEPROMPT)"; fi)\(%B$FGPROMPT%n@%m%b$FRAMEPROMPT)-[%B$([ "$PATHPROMPT_COLOR" = "terminal_default" ] && echo "%F{reset}" || echo "%F{$PATHPROMPT_COLOR}")%(6~.%-1~/…/%4~.%5~)%b$FRAMEPROMPT]$(git_prompt_info)\n$FRAMEPROMPT└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
-            RPROMPT=
+            PROMPT=$'$FRAMEPROMPT┌─'$dashes$ssh_indicator$tmux_indicator$docker_indicator$nix_indicator$'$(if [[ -n $VIRTUAL_ENV ]]; then echo "─(%F{$VENVPROMPT_COLOR}$(basename $VIRTUAL_ENV)$FRAMEPROMPT)"; elif [[ -n $CONDA_DEFAULT_ENV ]]; then echo "─(%F{$VENVPROMPT_COLOR}$CONDA_DEFAULT_ENV$FRAMEPROMPT)"; fi)$(if whence -p kubectl &>/dev/null; then local _ctx=$(kubectl config current-context 2>/dev/null); [ -n "$_ctx" ] && echo "─(%F{$K8SPROMPT_COLOR}$_ctx$FRAMEPROMPT)"; fi)\(%B$FGPROMPT%n@%m%b$FRAMEPROMPT)-[%B$([ "$PATHPROMPT_COLOR" = "terminal_default" ] && echo "%F{reset}" || echo "%F{$PATHPROMPT_COLOR}")%(6~.%-1~/…/%4~.%5~)%b$FRAMEPROMPT]${vcs_info_msg_0_}\n$FRAMEPROMPT└─%(?.%B%(#.%F{red}#.$FGPROMPT$).%F{red}✘ %B%(#.%F{red}#.$FGPROMPT$))%b%F{reset} '
+            RPROMPT='${_cmd_duration_msg}'
             ;;
         oneline)
-            PROMPT=$'%B$FGPROMPT%n@%m%b%F{reset}:%B$([ "$PATHPROMPT_COLOR" = "terminal_default" ] && echo "%F{reset}" || echo "%F{$PATHPROMPT_COLOR}")%~%b$(git_prompt_info)%F{reset}%(#.#.$) '
-            RPROMPT=
+            PROMPT=$'$([ -n "$SSH_CONNECTION" ] && echo "%F{$SSHPROMPT_COLOR}SSH%F{reset} ")$([ -n "$TMUX" ] && echo "%F{$TMUXPROMPT_COLOR}tmux%F{reset} ")$([ -f /.dockerenv ] || [ -f /run/.containerenv ] || [ -n "$container" ] && echo "%F{$DOCKERPROMPT_COLOR}container%F{reset} ")$([ -n "$IN_NIX_SHELL" ] || [ -n "$NIX_STORE" ] && echo "%F{$NIXPROMPT_COLOR}nix%F{reset} ")%B$FGPROMPT%n@%m%b%F{reset}:%B$([ "$PATHPROMPT_COLOR" = "terminal_default" ] && echo "%F{reset}" || echo "%F{$PATHPROMPT_COLOR}")%~%b${vcs_info_msg_0_}%F{reset}$(if whence -p kubectl &>/dev/null; then local _ctx=$(kubectl config current-context 2>/dev/null); [ -n "$_ctx" ] && echo " %F{$K8SPROMPT_COLOR}[$_ctx]%F{reset}"; fi)%(?.%(#.#.$).%F{red}✘%F{reset}) '
+            RPROMPT='${_cmd_duration_msg}'
             ;;
     esac
 
@@ -108,6 +171,65 @@ configure_prompt() {
 }
 
 configure_prompt
+
+# async vcs_info: run in background and signal parent to refresh prompt
+_kali_async_vcs_tmpfile="/tmp/.kali_vcs_info_$$"
+
+_kali_async_vcs() {
+    vcs_info
+    printf '%s' "${vcs_info_msg_0_}" > "$_kali_async_vcs_tmpfile"
+    kill -USR1 $$ 2>/dev/null
+}
+
+TRAPUSR1() {
+    if [[ -f "$_kali_async_vcs_tmpfile" ]]; then
+        vcs_info_msg_0_="$(<"$_kali_async_vcs_tmpfile")"
+        zle && zle reset-prompt
+    fi
+}
+
+_kali_precmd() {
+    # command duration
+    if [[ "$SHOW_CMD_DURATION" == yes && -n "$_cmd_start_time" ]]; then
+        local elapsed=$(( SECONDS - _cmd_start_time ))
+        if (( elapsed >= CMDTIME_THRESHOLD )); then
+            local mins=$(( elapsed / 60 ))
+            local secs=$(( elapsed % 60 ))
+            if (( mins > 0 )); then
+                _cmd_duration_msg="%F{$CMDTIME_COLOR}${mins}m${secs}s%f"
+            else
+                _cmd_duration_msg="%F{$CMDTIME_COLOR}${secs}s%f"
+            fi
+        else
+            _cmd_duration_msg=''
+        fi
+        unset _cmd_start_time
+    else
+        _cmd_duration_msg=''
+    fi
+
+    # vcs_info: async or sync
+    if [[ "$ASYNC_VCS_INFO" == yes ]]; then
+        vcs_info_msg_0_=''
+        _kali_async_vcs &!
+    else
+        vcs_info
+    fi
+}
+
+_kali_preexec() {
+    _cmd_start_time=$SECONDS
+}
+
+# cleanup temp file on exit
+_kali_zshexit() {
+    rm -f "$_kali_async_vcs_tmpfile"
+}
+
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _kali_precmd
+add-zsh-hook preexec _kali_preexec
+add-zsh-hook zshexit _kali_zshexit
 
 if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
 
@@ -150,17 +272,14 @@ if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
 
 
     if [ "$syntax_highlighting" = yes ]; then
-        CL_CYAN="$FRAMEPROMPT_USER"
         ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
         ZSH_HIGHLIGHT_STYLES[default]=none
-        ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=white,underline
-        ZSH_HIGHLIGHT_STYLES[reserved-word]=fg=cyan,bold
-        ZSH_HIGHLIGHT_STYLES[suffix-alias]=fg=$CL_CYAN,underline
-        ZSH_HIGHLIGHT_STYLES[global-alias]=fg=$CL_CYAN,bold
-        ZSH_HIGHLIGHT_STYLES[precommand]=fg=$CL_CYAN,underline
+        ZSH_HIGHLIGHT_STYLES[reserved-word]=fg=green,bold
+        ZSH_HIGHLIGHT_STYLES[suffix-alias]=fg=$FRAMEPROMPT_USER,underline
+        ZSH_HIGHLIGHT_STYLES[global-alias]=fg=$FRAMEPROMPT_USER,bold
+        ZSH_HIGHLIGHT_STYLES[precommand]=fg=$FRAMEPROMPT_USER,underline
         ZSH_HIGHLIGHT_STYLES[commandseparator]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[autodirectory]=fg=$CL_CYAN,underline
-        ZSH_HIGHLIGHT_STYLES[path]=fg=white,bold
+        ZSH_HIGHLIGHT_STYLES[autodirectory]=fg=$FRAMEPROMPT_USER,underline
         ZSH_HIGHLIGHT_STYLES[path_pathseparator]=
         ZSH_HIGHLIGHT_STYLES[path_prefix_pathseparator]=
         ZSH_HIGHLIGHT_STYLES[globbing]=fg=blue,bold
@@ -169,30 +288,43 @@ if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
         ZSH_HIGHLIGHT_STYLES[command-substitution-delimiter]=fg=magenta,bold
         ZSH_HIGHLIGHT_STYLES[process-substitution]=none
         ZSH_HIGHLIGHT_STYLES[process-substitution-delimiter]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=fg=$CL_CYAN
-        ZSH_HIGHLIGHT_STYLES[double-hyphen-option]=fg=$CL_CYAN
+        ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=fg=$FRAMEPROMPT_USER
+        ZSH_HIGHLIGHT_STYLES[double-hyphen-option]=fg=$FRAMEPROMPT_USER
         ZSH_HIGHLIGHT_STYLES[back-quoted-argument]=none
         ZSH_HIGHLIGHT_STYLES[back-quoted-argument-delimiter]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[single-quoted-argument]=fg=yellow
-        ZSH_HIGHLIGHT_STYLES[double-quoted-argument]=fg=yellow
-        ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]=fg=yellow
         ZSH_HIGHLIGHT_STYLES[rc-quote]=fg=magenta
         ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]=fg=magenta,bold
         ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]=fg=magenta,bold
         ZSH_HIGHLIGHT_STYLES[back-dollar-quoted-argument]=fg=magenta,bold
         ZSH_HIGHLIGHT_STYLES[assign]=none
         ZSH_HIGHLIGHT_STYLES[redirection]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[comment]=fg=black,bold
         ZSH_HIGHLIGHT_STYLES[named-fd]=none
         ZSH_HIGHLIGHT_STYLES[numeric-fd]=none
-        ZSH_HIGHLIGHT_STYLES[arg0]=fg=cyan
         ZSH_HIGHLIGHT_STYLES[bracket-error]=fg=red,bold
         ZSH_HIGHLIGHT_STYLES[bracket-level-1]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[bracket-level-2]=fg=$CL_CYAN,bold
+        ZSH_HIGHLIGHT_STYLES[bracket-level-2]=fg=$FRAMEPROMPT_USER,bold
         ZSH_HIGHLIGHT_STYLES[bracket-level-3]=fg=magenta,bold
         ZSH_HIGHLIGHT_STYLES[bracket-level-4]=fg=yellow,bold
         ZSH_HIGHLIGHT_STYLES[bracket-level-5]=fg=cyan,bold
         ZSH_HIGHLIGHT_STYLES[cursor-matchingbracket]=standout
+
+        if [[ "$_resolved_theme_mode" == light ]]; then
+            ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=red,bold
+            ZSH_HIGHLIGHT_STYLES[path]=fg=black,bold
+            ZSH_HIGHLIGHT_STYLES[arg0]=fg=240
+            ZSH_HIGHLIGHT_STYLES[single-quoted-argument]=fg=130
+            ZSH_HIGHLIGHT_STYLES[double-quoted-argument]=fg=130
+            ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]=fg=130
+            ZSH_HIGHLIGHT_STYLES[comment]=fg=246
+        else
+            ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=red,bold
+            ZSH_HIGHLIGHT_STYLES[path]=fg=white,bold
+            ZSH_HIGHLIGHT_STYLES[arg0]=fg=cyan
+            ZSH_HIGHLIGHT_STYLES[single-quoted-argument]=fg=yellow
+            ZSH_HIGHLIGHT_STYLES[double-quoted-argument]=fg=yellow
+            ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]=fg=yellow
+            ZSH_HIGHLIGHT_STYLES[comment]=fg=240
+        fi
     fi
 
     unset syntax_highlighting
