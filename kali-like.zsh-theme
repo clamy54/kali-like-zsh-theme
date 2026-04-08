@@ -350,6 +350,13 @@ if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
     export LS_COLORS="$LS_COLORS:ow=30;44:" # fix ls color for folders with 777 permissions
 
+    # fix backup/temp files invisible on dark backgrounds (default is bold black 01;30)
+    # use dim gray + italic (03=italic, 02=dim); italic degrades gracefully if unsupported
+    local _backup_exts=(old orig bak swp swo tmp dpkg-old dpkg-new rpmnew rpmorig rpmsave pacsave pacnew)
+    for _ext in "${_backup_exts[@]}"; do
+        export LS_COLORS="$LS_COLORS:*.$_ext=02;03;38;5;243:"
+    done
+
     alias ls='ls --color=auto'
     alias dir='dir --color=auto'
     alias vdir='vdir --color=auto'
